@@ -80,12 +80,14 @@ function taylorinteg(
     maxsteps::Int = 500,
     parse_eqs::Bool = true,
     dense::Bool = true,
+    callback = nothing
 ) where {T<:Real,U<:Number}
 
     # Allocation
     cache = init_cache(Val(dense), t0, x0, maxsteps, order, f, params; parse_eqs)
 
-    return taylorinteg!(Val(dense), f, x0, t0, tmax, abstol, cache, params; maxsteps)
+    return taylorinteg!(Val(dense), f, x0, t0, tmax, abstol, cache, params;
+        maxsteps, callback)
 end
 
 function taylorinteg!(
@@ -98,6 +100,7 @@ function taylorinteg!(
     cache::ScalarCache,
     params;
     maxsteps::Int = 500,
+    callback = nothing
 ) where {T<:Real,U<:Number,D}
 
     @unpack tv, xv, psol, t, x, rv, parse_eqs = cache
@@ -127,6 +130,13 @@ function taylorinteg!(
             """)
             break
         end
+        # Break callback
+        if !isnothing(callback) && callback(x, params, t)
+            @warn("""
+            Callback returned true; exiting.
+            """)
+            break
+        end
     end
 
     return build_solution(tv, xv, psol, nsteps)
@@ -144,12 +154,14 @@ function taylorinteg(
     maxsteps::Int = 500,
     parse_eqs::Bool = true,
     dense::Bool = true,
+    callback = nothing
 ) where {T<:Real,U<:Number}
 
     # Allocation
     cache = init_cache(Val(dense), t0, q0, maxsteps, order, f!, params; parse_eqs)
 
-    return taylorinteg!(Val(dense), f!, q0, t0, tmax, abstol, cache, params; maxsteps)
+    return taylorinteg!(Val(dense), f!, q0, t0, tmax, abstol, cache, params;
+        maxsteps, callback)
 end
 
 function taylorinteg!(
@@ -162,6 +174,7 @@ function taylorinteg!(
     cache::VectorCache,
     params;
     maxsteps::Int = 500,
+    callback = nothing
 ) where {T<:Real,U<:Number,D}
 
     @unpack tv, xv, psol, xaux, t, x, dx, rv, parse_eqs = cache
@@ -189,6 +202,13 @@ function taylorinteg!(
         if nsteps > maxsteps
             @warn("""
             Maximum number of integration steps reached; exiting.
+            """)
+            break
+        end
+        # Break callback
+        if !isnothing(callback) && callback(dx, x, params, t)
+            @warn("""
+            Callback returned true; exiting.
             """)
             break
         end
@@ -297,6 +317,7 @@ function taylorinteg(
     params = nothing;
     maxsteps::Int = 500,
     parse_eqs::Bool = true,
+    callback = nothing
 ) where {T<:Real,U<:Number}
 
     # Check if trange is increasingly or decreasingly sorted
@@ -305,7 +326,7 @@ function taylorinteg(
     # Allocation
     cache = init_cache(Val(false), trange, x0, maxsteps, order, f, params; parse_eqs)
 
-    return taylorinteg!(f, x0, trange, abstol, cache, params; maxsteps)
+    return taylorinteg!(f, x0, trange, abstol, cache, params; maxsteps, callback)
 end
 
 function taylorinteg!(
@@ -316,6 +337,7 @@ function taylorinteg!(
     cache::ScalarCache,
     params;
     maxsteps::Int = 500,
+    callback = nothing
 ) where {T<:Real,U<:Number}
 
     @unpack xv, t, x, rv, parse_eqs = cache
@@ -355,6 +377,13 @@ function taylorinteg!(
             """)
             break
         end
+        # Break callback
+        if !isnothing(callback) && callback(x, params, t)
+            @warn("""
+            Callback returned true; exiting.
+            """)
+            break
+        end
     end
     return build_solution(trange, xv)
 end
@@ -368,6 +397,7 @@ function taylorinteg(
     params = nothing;
     maxsteps::Int = 500,
     parse_eqs::Bool = true,
+    callback = nothing
 ) where {T<:Real,U<:Number}
 
     # Check if trange is increasingly or decreasingly sorted
@@ -376,7 +406,7 @@ function taylorinteg(
     # Allocation
     cache = init_cache(Val(false), trange, q0, maxsteps, order, f!, params; parse_eqs)
 
-    return taylorinteg!(f!, q0, trange, abstol, cache, params; maxsteps)
+    return taylorinteg!(f!, q0, trange, abstol, cache, params; maxsteps, callback)
 end
 
 function taylorinteg!(
@@ -387,6 +417,7 @@ function taylorinteg!(
     cache::VectorTRangeCache,
     params;
     maxsteps::Int = 500,
+    callback = nothing
 ) where {T<:Real,U<:Number}
 
     @unpack xv, xaux, x0, x1, t, x, dx, rv, parse_eqs = cache
@@ -427,6 +458,13 @@ function taylorinteg!(
             """)
             break
         end
+        # Break callback
+        if !isnothing(callback) && callback(dx, x, params, t)
+            @warn("""
+            Callback returned true; exiting.
+            """)
+            break
+        end
     end
 
     return build_solution(trange, xv)
@@ -448,6 +486,7 @@ for R in (:Number, :Integer)
             dense = false,
             maxsteps::Int = 500,
             parse_eqs::Bool = true,
+            callback = nothing
         ) where {S<:$R,T<:Real,U<:Real,V<:Real}
 
             # In order to handle mixed input types, we promote types before integrating:
@@ -465,6 +504,7 @@ for R in (:Number, :Integer)
                 dense = dense,
                 maxsteps = maxsteps,
                 parse_eqs = parse_eqs,
+                callback = callback
             )
         end
 
@@ -479,6 +519,7 @@ for R in (:Number, :Integer)
             dense = false,
             maxsteps::Int = 500,
             parse_eqs::Bool = true,
+            callback = nothing
         ) where {S<:$R,T<:Real,U<:Real,V<:Real}
 
             #promote to common type before integrating:
@@ -498,6 +539,7 @@ for R in (:Number, :Integer)
                 dense = dense,
                 maxsteps = maxsteps,
                 parse_eqs = parse_eqs,
+                callback = callback
             )
         end
 
@@ -510,6 +552,7 @@ for R in (:Number, :Integer)
             params = nothing;
             maxsteps::Int = 500,
             parse_eqs::Bool = true,
+            callback = nothing
         ) where {S<:$R,T<:Real,U<:Real}
 
             t0, abstol, _ = promote(trange[1], aabstol, one(Float64))
@@ -524,6 +567,7 @@ for R in (:Number, :Integer)
                 params,
                 maxsteps = maxsteps,
                 parse_eqs = parse_eqs,
+                callback = callback
             )
         end
 
@@ -536,6 +580,7 @@ for R in (:Number, :Integer)
             params = nothing;
             maxsteps::Int = 500,
             parse_eqs::Bool = true,
+            callback = nothing
         ) where {S<:$R,T<:Real,U<:Real}
 
             t0, abstol, _ = promote(trange[1], aabstol, one(Float64))
@@ -551,6 +596,7 @@ for R in (:Number, :Integer)
                 params,
                 maxsteps = maxsteps,
                 parse_eqs = parse_eqs,
+                callback = callback
             )
         end
 

@@ -251,6 +251,7 @@ function taylorinteg(
     eventorder::Int = 0,
     newtoniter::Int = 10,
     nrabstol::T = eps(T),
+    callback = nothing
 ) where {T<:Real,U<:Number}
 
     @assert order ≥ eventorder "`eventorder` must be less than or equal to `order`"
@@ -272,6 +273,7 @@ function taylorinteg(
         eventorder,
         newtoniter,
         nrabstol,
+        callback
     )
 end
 
@@ -289,6 +291,7 @@ function taylorinteg!(
     eventorder::Int = 0,
     newtoniter::Int = 10,
     nrabstol::T = eps(T),
+    callback = nothing
 ) where {T<:Real,U<:Number,D}
 
     @unpack tv, xv, psol, xaux, t, x, dx, rv, parse_eqs = cache
@@ -358,6 +361,13 @@ function taylorinteg!(
             """)
             break
         end
+        # Break callback
+        if !isnothing(callback) && callback(dx, x, params, t)
+            @warn("""
+            Callback returned true; exiting.
+            """)
+            break
+        end
     end
 
     return build_solution(tv, xv, psol, tvS, xvS, gvS, nsteps, nevents)
@@ -376,6 +386,7 @@ function taylorinteg(
     eventorder::Int = 0,
     newtoniter::Int = 10,
     nrabstol::T = eps(T),
+    callback = nothing
 ) where {T<:Real,U<:Number}
 
     @assert order ≥ eventorder "`eventorder` must be less than or equal to `order`"
@@ -398,6 +409,7 @@ function taylorinteg(
         eventorder,
         newtoniter,
         nrabstol,
+        callback
     )
 end
 
@@ -413,6 +425,7 @@ function taylorinteg!(
     eventorder::Int = 0,
     newtoniter::Int = 10,
     nrabstol::T = eps(T),
+    callback = nothing
 ) where {T<:Real,U<:Number}
 
     @unpack tv, xv, xaux, x0, x1, t, x, dx, rv, parse_eqs = cache
@@ -489,6 +502,13 @@ function taylorinteg!(
         if nsteps > maxsteps
             @warn("""
             Maximum number of integration steps reached; exiting.
+            """)
+            break
+        end
+        # Break callback
+        if !isnothing(callback) && callback(dx, x, params, t)
+            @warn("""
+            Callback returned true; exiting.
             """)
             break
         end
