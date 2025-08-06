@@ -251,6 +251,7 @@ function taylorinteg(
     eventorder::Int = 0,
     newtoniter::Int = 10,
     nrabstol::T = eps(T),
+    break_on_first::Bool = false
 ) where {T<:Real,U<:Number}
 
     @assert order ≥ eventorder "`eventorder` must be less than or equal to `order`"
@@ -272,6 +273,7 @@ function taylorinteg(
         eventorder,
         newtoniter,
         nrabstol,
+        break_on_first
     )
 end
 
@@ -289,6 +291,7 @@ function taylorinteg!(
     eventorder::Int = 0,
     newtoniter::Int = 10,
     nrabstol::T = eps(T),
+    break_on_first::Bool = false
 ) where {T<:Real,U<:Number,D}
 
     @unpack tv, xv, psol, xaux, t, x, dx, rv, parse_eqs = cache
@@ -357,6 +360,9 @@ function taylorinteg!(
             Maximum number of integration steps reached; exiting.
             """)
             break
+        end
+        if break_on_first
+            nevents > 1 && break
         end
     end
 
